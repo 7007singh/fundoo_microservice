@@ -1,5 +1,5 @@
 from logger import logger
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status, Response, Request
 from sqlalchemy.orm import Session
 from .model import get_db, User
 from . import schema
@@ -45,6 +45,16 @@ def authenticate(response: Response, token: str, db: Session = Depends(get_db)):
     try:
         payload = JWT.jwt_decode(token=token)
         user = db.query(User).filter_by(id=payload.get('user')).one_or_none()
+        return user.to_json()
+    except Exception as e:
+        response.status_code = 401
+        return {'message': str(e)}
+
+
+@user_router.get('/retrieve_user/', status_code=status.HTTP_200_OK)
+def retrieve_user(request: Request, response: Response, user: int, db: Session = Depends(get_db)):
+    try:
+        user = db.query(User).filter_by(id=user).one_or_none()
         return user.to_json()
     except Exception as e:
         response.status_code = 401

@@ -33,3 +33,13 @@ class Note(Base):
         return {'id': self.id, 'title': self.title, 'description': self.description, 'color': self.color,
                 'user_id': self.user_id}
 
+
+class Collaborator(Base):
+    __tablename__ = 'collaborator'
+
+    id = Column(BigInteger, primary_key=True, index=True)
+    note_id = Column(BigInteger, nullable=False)
+    user_id = Column(BigInteger, nullable=False)
+
+
+
