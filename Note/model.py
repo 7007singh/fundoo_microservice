@@ -32,3 +32,4 @@ class Note(Base):
     def to_json(self):
         return {'id': self.id, 'title': self.title, 'description': self.description, 'color': self.color,
                 'user_id': self.user_id}
+

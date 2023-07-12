@@ -22,6 +22,7 @@ def get_db():
 
 class User(Base):
     __tablename__ = 'users'
+
     id = Column(BigInteger, primary_key=True, index=True)
     first_name = Column(String(30))
     last_name = Column(String(30))
@@ -29,5 +30,8 @@ class User(Base):
     password = Column(String)
     is_superuser = Column(Boolean, default=False)
     is_verified = Column(Boolean, default=False)
+
+    def to_json(self):
+        return {'id': self.id, 'username': self.username, 'first_name': self.first_name, 'last_name': self.last_name}
 
 

@@ -6,7 +6,7 @@ class JWT:
     @staticmethod
     def jwt_encode(payload: dict):
         if 'exp' not in payload:
-            payload.update(exp=datetime.utcnow() + timedelta(hours=1), iat=datetime.utcnow())
+            payload.update(exp=datetime.utcnow() + timedelta(hours=2), iat=datetime.utcnow())
         return jwt.encode(payload, 'key', algorithm="HS256")
 
     @staticmethod

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from .model import get_db, User
 from . import schema
 from passlib.hash import pbkdf2_sha256
-from utils import JWT
+from User.utils import JWT
 
 
 user_router = APIRouter()
@@ -22,7 +22,7 @@ def register_user(data: schema.User, db: Session = Depends(get_db)):
         return {"message": 'User registered successfully', 'Status': 201, 'data': user}
     except Exception as e:
         logger.exception(e.args[0])
-        return {"message": 'User registered successfully', 'Status': 400, 'data': {}}
+        return {"message": e.args[0], 'Status': 400, 'data': {}}
 
 
 @user_router.post('login', status_code=status.HTTP_200_OK)
@@ -42,5 +42,10 @@ def login_user(response: Response, login: schema.Login, db: Session = Depends(ge
 
 @user_router.get('/authenticate', status_code=status.HTTP_200_OK)
 def authenticate(response: Response, token: str, db: Session = Depends(get_db)):
-    payload = JWT.jwt_decode(token=token)
-    return payload
+    try:
+        payload = JWT.jwt_decode(token=token)
+        user = db.query(User).filter_by(id=payload.get('user')).one_or_none()
+        return user.to_json()
+    except Exception as e:
+        response.status_code = 401
+        return {'message': str(e)}
