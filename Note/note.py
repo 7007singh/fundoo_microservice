@@ -1,5 +1,5 @@
 from logger import logger
-from fastapi import APIRouter, Request, Depends, status, Security
+from fastapi import APIRouter, Request, Depends, status, Security, Response
 from sqlalchemy.orm import Session
 from .model import get_db
 from .model import Note, Collaborator
@@ -29,11 +29,11 @@ def create_note(request: Request, data: schema.NoteSchema, db: Session = Depends
 @note_router.get('/get_note', status_code=status.HTTP_200_OK)
 def get_note(request: Request, db: Session = Depends(get_db)):
     try:
+        notes = db.query(Note).filter_by(user_id=request.state.user.get('id')).all()
         collab = db.query(Collaborator).filter_by(user_id=request.state.user.get('id')).all()
-        print(collab)
-        note = db.query(Note).filter_by(id=collab.note_id)
-        notes = db.query(Note).filter_by(user_id=request.state.user.get('id').all())
+        collab_note = list(map(lambda x: db.query(Note).filter_by(id=x.note_id).one().to_json(), collab))
         data = [note.to_json() for note in notes]
+        data.extend(collab_note)
         return {'message': 'User notes', 'status': 200, 'data': data}
     except Exception as e:
         logger.exception(str(e))
@@ -85,7 +85,7 @@ def add_collaborator(request: Request, data: schema.CollaboratorSchema, db: Sess
             if not user:
                 raise Exception(f'User {i} not found')
             collaborator.append(Collaborator(note_id=note.id, user_id=user.get('id')))
-        db.delete(collaborator)
+        db.add_all(collaborator)
         db.commit()
         return {'message': 'collaborated added', 'status': 200}
     except Exception as e:
@@ -110,3 +110,14 @@ def delete_collaborator(request: Request, data: schema.CollaboratorSchema, db: S
     except Exception as e:
         logger.exception(str(e))
         return {'message': str(e), 'status': 400}
+
+
+@note_router.get('/retrieve_note/', status_code=status.HTTP_200_OK)
+def retrieve_note(request: Request, response: Response, note: int, db: Session = Depends(get_db)):
+    try:
+        note = db.query(Note).filter_by(id=note, user_id=request.state.user.get('id')).one_or_none()
+        return note.to_json()
+    except Exception as e:
+        response.status_code = 400
+        return {'message': str(e)}
+

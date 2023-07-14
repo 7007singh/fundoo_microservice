@@ -30,6 +30,7 @@ logger = logging.getLogger("alembic.env")
 db_names = config.get_main_option("databases", "")
 config.set_section_option('user_ms', 'sqlalchemy.url', os.environ.get('USER_DB'))
 config.set_section_option('note_ms', 'sqlalchemy.url', os.environ.get('NOTE_DB'))
+config.set_section_option('label_ms', 'sqlalchemy.url', os.environ.get('LABEL_DB'))
 
 # add your model's MetaData objects here
 # for 'autogenerate' support.  These must be se
@@ -44,8 +45,9 @@ config.set_section_option('note_ms', 'sqlalchemy.url', os.environ.get('NOTE_DB')
 # }
 from User.model import Base as user
 from Note.model import Base as note
+from Label.model import Base as label
 
-target_metadata = {'user_ms': user.metadata, 'note_ms': note.metadata}
+target_metadata = {'user_ms': user.metadata, 'note_ms': note.metadata, 'label_ms': label.metadata}
 
 
 # other values from the config, defined by the needs of env.py,

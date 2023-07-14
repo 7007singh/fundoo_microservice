@@ -9,4 +9,7 @@ run_user:
 run_note:
 	@uvicorn main:note_app --port ${NOTE_PORT} --reload
 
+run_label:
+	@uvicorn main:label_app --port ${LABEL_PORT} --reload
+
 endif
