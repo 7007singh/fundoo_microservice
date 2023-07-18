@@ -22,3 +22,5 @@ def fetch_note(note_id: int, token: str):
     if response.status_code >= 400:
         return None
     return response.json()
+
+

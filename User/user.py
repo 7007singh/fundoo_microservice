@@ -5,6 +5,11 @@ from .model import get_db, User
 from . import schema
 from passlib.hash import pbkdf2_sha256
 from User.utils import JWT
+from tasks import send_mail
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 user_router = APIRouter()
@@ -19,6 +24,9 @@ def register_user(data: schema.User, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
+        token = JWT.jwt_encode({'user': user.id})
+        verify_link = f'{os.environ.get("BASE_URL")}:{os.environ.get("USER_PORT")}/user/verify?token={token}'
+        send_mail.delay(user.email, verify_link)
         return {"message": 'User registered successfully', 'Status': 201, 'data': user}
     except Exception as e:
         logger.exception(e.args[0])
@@ -29,7 +37,7 @@ def register_user(data: schema.User, db: Session = Depends(get_db)):
 def login_user(response: Response, login: schema.Login, db: Session = Depends(get_db)):
     try:
         user = db.query(User).filter_by(username=login.username).one_or_none()
-        if user and pbkdf2_sha256.verify(login.password, user.password):
+        if user and pbkdf2_sha256.verify(login.password, user.password) and user.is_verified:
             token = JWT.jwt_encode({'user': user.id})
             return {"message": 'Logged in successfully', 'status': 200, 'access_token': token}
         response.status_code = status.HTTP_401_UNAUTHORIZED
@@ -58,4 +66,19 @@ def retrieve_user(request: Request, response: Response, user: int, db: Session =
         return user.to_json()
     except Exception as e:
         response.status_code = 401
+        return {'message': str(e)}
+
+
+@user_router.get('/verify', status_code=status.HTTP_200_OK)
+def to_verify(request: Request, response: Response, token: str, db: Session = Depends(get_db)):
+    try:
+        payload = JWT.jwt_decode(token)
+        user = db.query(User).filter_by(id=payload.get('user')).one_or_none()
+        if not user:
+            raise Exception('user not found')
+        user.is_verified = True
+        db.commit()
+        return {'message': 'user verified successfully', 'status': 200}
+    except Exception as e:
+        response.status_code = 400
         return {'message': str(e)}
