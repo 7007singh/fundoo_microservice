@@ -16,7 +16,7 @@ user_router = APIRouter()
 
 
 @user_router.post('/register', status_code=status.HTTP_201_CREATED)
-def register_user(data: schema.User, db: Session = Depends(get_db)):
+def register_user(response:Response, data: schema.User, db: Session = Depends(get_db)):
     try:
         data = data.model_dump()
         data['password'] = pbkdf2_sha256.hash(data['password'])
@@ -30,6 +30,7 @@ def register_user(data: schema.User, db: Session = Depends(get_db)):
         return {"message": 'User registered successfully', 'Status': 201, 'data': user}
     except Exception as e:
         logger.exception(e.args[0])
+        response.status_code = 400
         return {"message": e.args[0], 'Status': 400, 'data': {}}
 
 

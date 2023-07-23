@@ -12,22 +12,23 @@ note_router = APIRouter(dependencies=[Security(APIKeyHeader(name='Authorization'
 
 
 @note_router.post('/create_note', status_code=status.HTTP_201_CREATED)
-def create_note(request: Request, data: schema.NoteSchema, db: Session = Depends(get_db)):
+def create_note(response: Response, request: Request, data: schema.NoteSchema, db: Session = Depends(get_db)):
     try:
-        data = data.dict()
+        data = data.model_dump()
         data.update({'user_id': request.state.user.get('id')})
         note = Note(**data)
         db.add(note)
         db.commit()
         db.refresh(note)
-        return {'message': 'note created', 'status': 200, 'data': note}
+        return {'message': 'note created', 'status': 201, 'data': note}
     except Exception as e:
         logger.exception(e.args[0])
+        response.status_code = 400
         return {'message': e.args[0], 'status': 400, 'data': {}}
 
 
 @note_router.get('/get_note', status_code=status.HTTP_200_OK)
-def get_note(request: Request, db: Session = Depends(get_db)):
+def get_note(response: Response, request: Request, db: Session = Depends(get_db)):
     try:
         notes = db.query(Note).filter_by(user_id=request.state.user.get('id')).all()
         collab = db.query(Collaborator).filter_by(user_id=request.state.user.get('id')).all()
@@ -37,13 +38,14 @@ def get_note(request: Request, db: Session = Depends(get_db)):
         return {'message': 'User notes', 'status': 200, 'data': data}
     except Exception as e:
         logger.exception(str(e))
+        response.status_code = 400
         return {'message': str(e), 'status': 400, 'data': {}}
 
 
 @note_router.put('/update_note/{note_id}', status_code=status.HTTP_200_OK)
-def update_note(request: Request, note_id: int, data: schema.NoteSchema, db: Session = Depends(get_db)):
+def update_note(response: Response, request: Request, note_id: int, data: schema.NoteSchema, db: Session = Depends(get_db)):
     try:
-        data = data.dict()
+        data = data.model_dump()
         data.update({'user_id': request.state.user.get('id')})
         note = db.query(Note).filter_by(id=note_id, user_id=request.state.user.get('id')).one_or_none()
         if not note:
@@ -54,11 +56,12 @@ def update_note(request: Request, note_id: int, data: schema.NoteSchema, db: Ses
         return {'message': 'Note updated', 'status': 200, 'data': note}
     except Exception as e:
         logger.exception(e.args[0])
+        response.status_code = 400
         return {'message': e.args[0], 'status': 400, 'data': {}}
 
 
 @note_router.delete('/delete_note/{note_id}', status_code=status.HTTP_200_OK)
-def delete_note(note_id: int, db: Session = Depends(get_db)):
+def delete_note(response: Response, note_id: int, db: Session = Depends(get_db)):
     try:
         note = db.query(Note).filter_by(id=note_id).first()
         if not note:
@@ -70,11 +73,12 @@ def delete_note(note_id: int, db: Session = Depends(get_db)):
         return {'message': 'Note deleted', 'status': 200}
     except Exception as e:
         logger.exception(str(e))
+        response.status_code = 400
         return {'message': str(e), 'status': 400}
 
 
-@note_router.post('/collaborate/', status_code=status.HTTP_200_OK)
-def add_collaborator(request: Request, data: schema.CollaboratorSchema, db: Session = Depends(get_db)):
+@note_router.post('/collaborate', status_code=status.HTTP_200_OK)
+def add_collaborator(response: Response, request: Request, data: schema.CollaboratorSchema, db: Session = Depends(get_db)):
     try:
         note = db.query(Note).filter_by(id=data.note_id, user_id=request.state.user.get('id')).one_or_none()
         if not note:
@@ -90,11 +94,12 @@ def add_collaborator(request: Request, data: schema.CollaboratorSchema, db: Sess
         return {'message': 'collaborated added', 'status': 200}
     except Exception as e:
         logger.exception(str(e))
+        response.status_code = 400
         return {'message': str(e), 'status': 400}
 
 
-@note_router.delete('/delete_collaborator/', status_code=status.HTTP_200_OK)
-def delete_collaborator(request: Request, data: schema.CollaboratorSchema, db: Session = Depends(get_db)):
+@note_router.delete('/delete_collaborator', status_code=status.HTTP_200_OK)
+def delete_collaborator(response: Response, request: Request, data: schema.CollaboratorSchema, db: Session = Depends(get_db)):
     try:
         note = db.query(Note).filter_by(id=data.note_id, user_id=request.state.user.get('id')).one_or_none()
         if not note:
@@ -109,6 +114,7 @@ def delete_collaborator(request: Request, data: schema.CollaboratorSchema, db: S
         return {'message': 'collaborator deleted', 'status': 200}
     except Exception as e:
         logger.exception(str(e))
+        response.status_code = 400
         return {'message': str(e), 'status': 400}
 
 

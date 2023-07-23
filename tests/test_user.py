@@ -1,8 +1,7 @@
-import json
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import sessionmaker
+
 from main import user_app
 from User.model import Base, get_db
 from sqlalchemy import create_engine
@@ -45,11 +44,9 @@ def login_user(client):
         "password": "password",
         "email": "abc@gmail.com"
     }
-    response = client.post('/user/register', json=jsonable_encoder(data))
+    client.post('/user/register', json=jsonable_encoder(data))
     login_response = client.post('/user/login', json=jsonable_encoder({'username': 'abc', 'password': 'password'}))
-    login_response = json.loads(login_response.content)
-    print(login_response)
-    return login_response.get('access_token')
+    return ""
 
 
 def test_user_register_successful(client):
@@ -61,7 +58,20 @@ def test_user_register_successful(client):
         "email": "abc@gmail.com"
     }
     response = client.post('/user/register', json=jsonable_encoder(data))
-    assert response.status_code==201
+    assert response.status_code == 201
+
+
+def test_user_register_fail(client):
+    data = {
+        "username": "abc",
+        "first_name": "xyz",
+        "last_name": "ab",
+        "password": "password",
+        "email": "abc@gmail.com"
+    }
+    response = client.post('/user/register', json=jsonable_encoder(data))
+    response = client.post('/user/register', json=jsonable_encoder(data))
+    assert response.status_code == 400
 
 
 def test_login_user_successful(client):
@@ -76,5 +86,19 @@ def test_login_user_successful(client):
     assert response.status_code == 201
 
     login_response = client.post('/user/login', json=jsonable_encoder({'username': 'abc', 'password': 'password'}))
-    print(login_response.content)
     assert login_response.status_code == 200
+
+
+def test_login_user_fail(client):
+    data = {
+        "username": "abc",
+        "first_name": "xyz",
+        "last_name": "ab",
+        "password": "password",
+        "email": "abc@gmail.com"
+    }
+    response = client.post('/user/register', json=jsonable_encoder(data))
+    assert response.status_code == 201
+
+    login_response = client.post('/user/login', json=jsonable_encoder({'username': 'abc', 'password': ''}))
+    assert login_response.status_code == 401
