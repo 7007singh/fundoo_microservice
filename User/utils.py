@@ -1,5 +1,9 @@
 import jwt
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 class JWT:
@@ -7,12 +11,12 @@ class JWT:
     def jwt_encode(payload: dict):
         if 'exp' not in payload:
             payload.update(exp=datetime.utcnow() + timedelta(hours=2), iat=datetime.utcnow())
-        return jwt.encode(payload, 'key', algorithm="HS256")
+        return jwt.encode(payload, os.environ.get('KEY'), algorithm="HS256")
 
     @staticmethod
     def jwt_decode(token):
         try:
-            return jwt.decode(token, 'key', algorithms=['HS256'])
+            return jwt.decode(token, os.environ.get('KEY'), algorithms=['HS256'])
         except jwt.PyJWTError as e:
             raise e
 

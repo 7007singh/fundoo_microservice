@@ -11,6 +11,14 @@ label_router = APIRouter(dependencies=[Security(APIKeyHeader(name='Authorization
 
 @label_router.post('/add_label', status_code=status.HTTP_201_CREATED)
 def create_label(request: Request, data: schema.LabelSchema, db: Session = Depends(get_db)):
+    """
+        param:
+            request: containing details of the incoming HTTP request.
+            data: data for creating label
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status, message and label data
+    """
     try:
         data = data.model_dump()
         data.update({'user_id': request.state.user.get('id')})
@@ -26,6 +34,13 @@ def create_label(request: Request, data: schema.LabelSchema, db: Session = Depen
 
 @label_router.get('/get_label', status_code=status.HTTP_200_OK)
 def get_label(request: Request, db: Session = Depends(get_db)):
+    """
+        param:
+            request: containing details of the incoming HTTP request.
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status, message and label data
+    """
     try:
         label = db.query(Label).filter_by(user_id=request.state.user.get('id')).all()
         print(label)
@@ -37,6 +52,15 @@ def get_label(request: Request, db: Session = Depends(get_db)):
 
 @label_router.put('/update_label/{label_id}', status_code=status.HTTP_200_OK)
 def update_label(request: Request, label_id: int, data: schema.LabelSchema, db: Session = Depends(get_db)):
+    """
+        param:
+            request: containing details of the incoming HTTP request.
+            label_id: ID of the label to be updated.
+            data: Label data for update, containing the label name and other optional fields.
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status, message and updated label data
+    """
     try:
         data = data.model_dump()
         label = db.query(Label).filter_by(id=label_id, user_id=request.state.user.get('id')).one_or_none()
@@ -53,6 +77,14 @@ def update_label(request: Request, label_id: int, data: schema.LabelSchema, db: 
 
 @label_router.delete('/delete_label/{label_id}', status_code=status.HTTP_200_OK)
 def delete_label(request: Request, label_id: int, db: Session = Depends(get_db)):
+    """
+        param:
+            request: containing details of the incoming HTTP request.
+            label_id: ID of the label to be deleted.
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status and message
+    """
     try:
         label = db.query(Label).filter_by(id=label_id, user_id=request.state.user.get('id')).one_or_none()
         if not label:
@@ -67,6 +99,14 @@ def delete_label(request: Request, label_id: int, db: Session = Depends(get_db))
 
 @label_router.post('/associate_label', status_code=status.HTTP_200_OK)
 def associate_label(request: Request, data: schema.Association, db: Session = Depends(get_db)):
+    """
+        param:
+            request: containing details of the incoming HTTP request.
+            data: list of label id and note id
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status and message
+    """
     try:
         note = fetch_note(data.note_id, token=request.headers.get('Authorization'))
         if not note:
@@ -89,6 +129,14 @@ def associate_label(request: Request, data: schema.Association, db: Session = De
 
 @label_router.delete('/delete_label_association', status_code=status.HTTP_200_OK)
 def delete_label_association(request: Request, data: schema.Association, db: Session = Depends(get_db)):
+    """
+        param:
+            request: containing details of the incoming HTTP request.
+            data: list of label id and note id
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status and message for delete association
+    """
     try:
         note = fetch_note(data.note_id, token=request.headers.get('Authorization'))
         if not note:

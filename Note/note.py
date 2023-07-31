@@ -13,6 +13,15 @@ note_router = APIRouter(dependencies=[Security(APIKeyHeader(name='Authorization'
 
 @note_router.post('/create_note', status_code=status.HTTP_201_CREATED)
 def create_note(response: Response, request: Request, data: schema.NoteSchema, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code
+        request: containing details of the incoming HTTP request.
+        data: Note data for creation, containing title, content, and other optional fields.
+        db: Database session to interact with the database.
+    return:
+        dict: note data with status and message
+    """
     try:
         data = data.model_dump()
         data.update({'user_id': request.state.user.get('id')})
@@ -29,6 +38,14 @@ def create_note(response: Response, request: Request, data: schema.NoteSchema, d
 
 @note_router.get('/get_note', status_code=status.HTTP_200_OK)
 def get_note(response: Response, request: Request, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code
+        request: containing details of the incoming HTTP request.
+        db: Database session to interact with the database.
+    return:
+        dict: Dictionary with notes associated with user, status and message
+    """
     try:
         notes = db.query(Note).filter_by(user_id=request.state.user.get('id')).all()
         collab = db.query(Collaborator).filter_by(user_id=request.state.user.get('id')).all()
@@ -44,6 +61,15 @@ def get_note(response: Response, request: Request, db: Session = Depends(get_db)
 
 @note_router.put('/update_note/{note_id}', status_code=status.HTTP_200_OK)
 def update_note(response: Response, request: Request, note_id: int, data: schema.NoteSchema, db: Session = Depends(get_db)):
+    """
+        param:
+            response: HTTP response status code
+            request: containing details of the incoming HTTP request.
+            note_id: ID of the note to be updated.
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with updated note data, status and message
+    """
     try:
         data = data.model_dump()
         data.update({'user_id': request.state.user.get('id')})
@@ -62,6 +88,14 @@ def update_note(response: Response, request: Request, note_id: int, data: schema
 
 @note_router.delete('/delete_note/{note_id}', status_code=status.HTTP_200_OK)
 def delete_note(response: Response, note_id: int, db: Session = Depends(get_db)):
+    """
+        param:
+            response: HTTP response status code
+            note_id: ID of the note to be deleted.
+            db: Database session to interact with the database.
+        return:
+            dict: deletion status
+    """
     try:
         note = db.query(Note).filter_by(id=note_id).first()
         if not note:
@@ -79,6 +113,15 @@ def delete_note(response: Response, note_id: int, db: Session = Depends(get_db))
 
 @note_router.post('/collaborate', status_code=status.HTTP_200_OK)
 def add_collaborator(response: Response, request: Request, data: schema.CollaboratorSchema, db: Session = Depends(get_db)):
+    """
+        param:
+            response: HTTP response status code
+            request: containing details of the incoming HTTP request.
+            data: Collaborator data containing the IDs of users to be added as collaborators.
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status and message
+    """
     try:
         note = db.query(Note).filter_by(id=data.note_id, user_id=request.state.user.get('id')).one_or_none()
         if not note:
@@ -100,6 +143,15 @@ def add_collaborator(response: Response, request: Request, data: schema.Collabor
 
 @note_router.delete('/delete_collaborator', status_code=status.HTTP_200_OK)
 def delete_collaborator(response: Response, request: Request, data: schema.CollaboratorSchema, db: Session = Depends(get_db)):
+    """
+        param:
+            response: HTTP response status code
+            request: containing details of the incoming HTTP request.
+            data: Collaborator data containing the IDs of users to be deleted as collaborators.
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with status and message
+    """
     try:
         note = db.query(Note).filter_by(id=data.note_id, user_id=request.state.user.get('id')).one_or_none()
         if not note:
@@ -120,6 +172,15 @@ def delete_collaborator(response: Response, request: Request, data: schema.Colla
 
 @note_router.get('/retrieve_note/', status_code=status.HTTP_200_OK)
 def retrieve_note(request: Request, response: Response, note: int, db: Session = Depends(get_db)):
+    """
+        param:
+            response: HTTP response status code
+            request: containing details of the incoming HTTP request.
+            note: query parameter for fetching note
+            db: Database session to interact with the database.
+        return:
+            dict: Dictionary with note data, message
+    """
     try:
         note = db.query(Note).filter_by(id=note, user_id=request.state.user.get('id')).one_or_none()
         return note.to_json()

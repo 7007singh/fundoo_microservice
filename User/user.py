@@ -1,5 +1,5 @@
 from logger import logger
-from fastapi import APIRouter, Depends, status, Response, Request
+from fastapi import APIRouter, Depends, status, Response
 from sqlalchemy.orm import Session
 from .model import get_db, User
 from . import schema
@@ -11,12 +11,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 user_router = APIRouter()
 
 
 @user_router.post('/register', status_code=status.HTTP_201_CREATED)
-def register_user(response:Response, data: schema.User, db: Session = Depends(get_db)):
+def register_user(response: Response, data: schema.User, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code
+        data: User data for registration, containing username, email, and password.
+        db: Database session to interact with the database
+    return:
+        dict: Dictionary containing token with message and status
+    """
     try:
         data = data.model_dump()
         data['password'] = pbkdf2_sha256.hash(data['password'])
@@ -27,7 +34,7 @@ def register_user(response:Response, data: schema.User, db: Session = Depends(ge
         token = JWT.jwt_encode({'user': user.id})
         verify_link = f'{os.environ.get("BASE_URL")}:{os.environ.get("USER_PORT")}/user/verify?token={token}'
         send_mail.delay(user.email, verify_link)
-        return {"message": 'User registered successfully', 'Status': 201, 'data': user}
+        return {"message": 'User registered successfully', 'Status': 201, 'data': token}
     except Exception as e:
         logger.exception(e.args[0])
         response.status_code = 400
@@ -36,6 +43,14 @@ def register_user(response:Response, data: schema.User, db: Session = Depends(ge
 
 @user_router.post('/login', status_code=status.HTTP_200_OK)
 def login_user(response: Response, login: schema.Login, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code.
+        login: User login credentials, containing username and password.
+        db: Database session to interact with the database.
+    return:
+        dict: Dictionary containing the message and status
+    """
     try:
         user = db.query(User).filter_by(username=login.username).one_or_none()
         if user and pbkdf2_sha256.verify(login.password, user.password):
@@ -51,6 +66,14 @@ def login_user(response: Response, login: schema.Login, db: Session = Depends(ge
 
 @user_router.get('/authenticate', status_code=status.HTTP_200_OK)
 def authenticate(response: Response, token: str, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code.
+        token: token provided by client for authenticate
+        db: Database session to interact with the database.
+    return:
+        dict: Dictionary containing user data
+    """
     try:
         payload = JWT.jwt_decode(token=token)
         user = db.query(User).filter_by(id=payload.get('user')).one_or_none()
@@ -61,7 +84,15 @@ def authenticate(response: Response, token: str, db: Session = Depends(get_db)):
 
 
 @user_router.get('/retrieve_user/', status_code=status.HTTP_200_OK)
-def retrieve_user(request: Request, response: Response, user: int, db: Session = Depends(get_db)):
+def retrieve_user(response: Response, user: int, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code.
+        user: user id to retrieve user data
+        db: Database session to interact with the database.
+    return:
+        dict: Dictionary containing user data
+    """
     try:
         user = db.query(User).filter_by(id=user).one_or_none()
         return user.to_json()
@@ -71,7 +102,15 @@ def retrieve_user(request: Request, response: Response, user: int, db: Session =
 
 
 @user_router.get('/verify', status_code=status.HTTP_200_OK)
-def to_verify(request: Request, response: Response, token: str, db: Session = Depends(get_db)):
+def to_verify(response: Response, token: str, db: Session = Depends(get_db)):
+    """
+    param:
+        response: HTTP response status code.
+        token: Verification token provided by the client for user account verification.
+        db: Database session to interact with the database.
+    return:
+        dict: Dictionary with verification status
+    """
     try:
         payload = JWT.jwt_decode(token)
         user = db.query(User).filter_by(id=payload.get('user')).one_or_none()
